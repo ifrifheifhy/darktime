@@ -124,10 +124,7 @@ const contactEmailIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentCo
         </p>
 
         <div class="mt-6 flex flex-wrap gap-2 text-xs text-[#9a6b27] dark:text-[#cba153]">
-          <span class="px-2 py-0.5 rounded bg-[#efe7d8] dark:bg-[#272421]">开源工具</span>
-          <span class="px-2 py-0.5 rounded bg-[#efe7d8] dark:bg-[#272421]">系统架构</span>
-          <span class="px-2 py-0.5 rounded bg-[#efe7d8] dark:bg-[#272421]">工程落地</span>
-          <span class="px-2 py-0.5 rounded bg-[#efe7d8] dark:bg-[#272421]">GitHub 仓库</span>
+          <span class="px-2.5 py-1 rounded bg-[#efe7d8] dark:bg-[#272421] font-mono tracking-wider">To Be Continued...</span>
         </div>
       </a>
     </div>
@@ -203,45 +200,28 @@ const contactEmailIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentCo
       </p>
     </div>
 
-    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-      {
-        repos.map((repo) => (
-          <a
-            href={repo.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="group flex flex-col justify-between rounded-xl border border-[#ded5c3] dark:border-[#38332a] bg-[#fbf8f1] dark:bg-[#1e1c1a] p-6 shadow-sm transition-all duration-300 hover:border-[#9a6b27] dark:hover:border-[#cba153] hover:shadow-md"
-          >
-            <div>
-              <div class="flex items-center justify-between">
-                <span class="font-mono text-xs text-[#9a6b27] dark:text-[#cba153]">
-                  {repo.language || 'Code'}
-                </span>
-                <span class="text-[#6e6459] dark:text-[#9c9486] transition-transform duration-300 group-hover:translate-x-1">
-                  ↗
-                </span>
-              </div>
+    <!-- 暂无项目占位展台：古典留白与 To Be Continued 标记 -->
+    <div class="mt-8 rounded-xl border border-dashed border-[#ded5c3] dark:border-[#38332a] bg-[#fbf8f1]/60 dark:bg-[#1a1816]/60 p-12 text-center transition-colors">
+      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#efe7d8] dark:bg-[#25221f] text-[#9a6b27] dark:text-[#cba153]">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="6" x2="12" y2="12"></line>
+          <line x1="12" y1="12" x2="16" y2="14"></line>
+        </svg>
+      </div>
 
-              <h4 class="mt-2 font-serif text-xl font-bold text-[#2c2520] dark:text-[#e6dfd3] group-hover:text-[#9a6b27] dark:group-hover:text-[#cba153] transition-colors">
-                {repo.name}
-              </h4>
+      <h3 class="mt-5 font-serif text-2xl font-bold tracking-widest text-[#2c2520] dark:text-[#e6dfd3] uppercase">
+        To Be Continued
+      </h3>
 
-              <p class="mt-2 text-sm leading-relaxed text-[#6e6459] dark:text-[#9c9486]">
-                {repo.description}
-              </p>
-            </div>
+      <p class="mt-2 text-sm leading-relaxed text-[#6e6459] dark:text-[#9c9486] max-w-md mx-auto">
+        工欲善其事，必先利其器。项目实践与独立工具正在研磨构思中，敬请期待。
+      </p>
 
-            <div class="mt-6 flex items-center gap-4 text-xs text-[#6e6459] dark:text-[#9c9486] pt-4 border-t border-[#ded5c3]/50 dark:border-[#38332a]/50">
-              <span class="inline-flex items-center gap-1">
-                ★ {formatRepoCount(repo.stars)}
-              </span>
-              <span class="inline-flex items-center gap-1">
-                ⌥ {formatRepoCount(repo.forks)}
-              </span>
-            </div>
-          </a>
-        ))
-      }
+      <div class="mt-6 inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono text-[#9a6b27] dark:text-[#cba153] bg-[#efe7d8] dark:bg-[#221f1b] border border-[#ded5c3] dark:border-[#38332a]">
+        <span class="inline-block w-1.5 h-1.5 rounded-full bg-[#9a6b27] dark:bg-[#cba153] animate-pulse"></span>
+        Under Construction & Ideation
+      </div>
     </div>
   </section>
 
