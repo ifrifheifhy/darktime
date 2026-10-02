@@ -27,7 +27,7 @@ export const profile = {
     },
     {
       label: "Email",
-      href: "mailto:contact@darktime.cn",
+      href: "mailto:yesterdaysun2023@163.com",
       icon: "email" as const,
     },
   ] satisfies ProfileLink[],
