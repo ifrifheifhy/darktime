@@ -1,0 +1,29 @@
+{
+  "name": "note",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "sync:docs": "node ./scripts/sync-starlight-content.mjs",
+    "predev": "pnpm sync:docs",
+    "prebuild": "pnpm sync:docs",
+    "prepreview": "pnpm sync:docs",
+    "dev": "bash -lc 'source ../../scripts/env.sh && astro dev --port 4321'",
+    "start": "bash -lc 'source ../../scripts/env.sh && astro dev'",
+    "start:prod": "./scripts/prod.sh",
+    "build": "bash -lc 'source ../../scripts/env.sh && astro build'",
+    "preview": "bash -lc 'source ../../scripts/env.sh && astro preview'",
+    "astro": "bash -lc 'source ../../scripts/env.sh && astro \"$@\"' --"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.38.3",
+    "astro": "^6.0.1",
+    "katex": "^0.16.45",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
+    "sharp": "^0.34.2"
+  },
+  "devDependencies": {
+    "gray-matter": "^4.0.3"
+  }
+}

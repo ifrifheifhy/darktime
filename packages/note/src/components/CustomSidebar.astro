@@ -1,0 +1,234 @@
+---
+import MobileMenuFooter from "virtual:starlight/components/MobileMenuFooter";
+import SidebarPersister from "@astrojs/starlight/components/SidebarPersister.astro";
+import SidebarTree from "./SidebarTree.astro";
+import { buildContentTree } from "../lib/content-tree";
+import {
+	getSectionLabel,
+	getSiteNavigation,
+	inferRouteNavigationContext,
+	NOTE_DOMAIN_ROOT,
+} from "../lib/site-navigation";
+
+const { starlightRoute } = Astro.locals;
+const { sidebar } = starlightRoute;
+const routeContext = inferRouteNavigationContext(starlightRoute.entry.id);
+const navigation = await getSiteNavigation();
+const currentSection = navigation.noteSections.find((section) => section.key === routeContext.sectionKey);
+const isNoteHome = routeContext.domain === "note" && !routeContext.sectionKey;
+const noteDomain = navigation.items.find((item) => item.key === "note");
+const sectionLabel =
+	currentSection?.label ??
+	(isNoteHome ? NOTE_DOMAIN_ROOT.title : getSectionLabel(routeContext.sectionKey ?? ""));
+const sectionHref =
+	currentSection?.href ?? (isNoteHome ? NOTE_DOMAIN_ROOT.href : routeContext.sectionKey ? `/${routeContext.sectionKey}/` : "/");
+const sectionMeta = currentSection
+	? `${currentSection.articleCount} 篇内容`
+	: isNoteHome
+		? `${navigation.noteSections.length} 个主题`
+		: undefined;
+const sectionDescription = currentSection?.description ?? (isNoteHome ? noteDomain?.description : undefined);
+
+// 用 content tree 的解析标题替换 sidebar 里的自定义 label
+const tree = await buildContentTree();
+const directoryHrefs = new Set(
+	Array.from(tree.foldersByPath.keys()).map((slug) => (slug ? `/${slug}/` : "/"))
+);
+
+type SidebarEntry = (typeof sidebar)[number];
+
+function hrefToSlug(href: string): string {
+	return href.replace(/^\//, "").replace(/\/$/, "");
+}
+
+// 递归收集 group 内所有 link 的 slug
+function getAllSlugs(entries: SidebarEntry[]): string[] {
+	const slugs: string[] = [];
+	for (const entry of entries) {
+		if (entry.type === "link") slugs.push(hrefToSlug(entry.href));
+		else slugs.push(...getAllSlugs(entry.entries));
+	}
+	return slugs;
+}
+
+// 通过最长公共路径前缀推断 group 对应的 folder slug
+// 例如 ["a/b/c", "a/b/d"] → "a/b"；["a/b", "a/b/c"] → "a/b"
+function inferGroupSlug(entries: SidebarEntry[]): string | undefined {
+	const slugs = getAllSlugs(entries);
+	if (slugs.length === 0) return undefined;
+
+	if (slugs.length === 1) {
+		const slug = slugs[0];
+		// 若唯一的 link 本身就是一个已知文件夹（目录 index），则它就是 group 的 slug
+		if (tree.foldersByPath.has(slug)) return slug;
+		const parts = slug.split("/");
+		return parts.length > 1 ? parts.slice(0, -1).join("/") : undefined;
+	}
+
+	// 多个 link：求最长公共路径前缀
+	const first = slugs[0].split("/");
+	let prefixLen = first.length;
+	for (const slug of slugs.slice(1)) {
+		const parts = slug.split("/");
+		let i = 0;
+		while (i < prefixLen && i < parts.length && first[i] === parts[i]) i++;
+		prefixLen = i;
+	}
+	const prefix = first.slice(0, prefixLen).join("/");
+	return prefix || undefined;
+}
+
+function transformLabels(items: SidebarEntry[]): SidebarEntry[] {
+	return items.map((item) => {
+		if (item.type === "link") {
+			const slug = hrefToSlug(item.href);
+			const title =
+				tree.articlesByPath.get(slug)?.title ?? tree.foldersByPath.get(slug)?.title;
+			return title ? { ...item, label: title } : item;
+		} else {
+			const groupSlug = inferGroupSlug(item.entries);
+			const groupTitle = groupSlug ? tree.foldersByPath.get(groupSlug)?.title : undefined;
+			return {
+				...item,
+				label: groupTitle ?? item.label,
+				entries: transformLabels(item.entries),
+			};
+		}
+	});
+}
+
+const transformedSidebar = transformLabels(sidebar);
+---
+
+<div class="custom-sidebar">
+	<div class="sidebar-context sl-hidden md:sl-grid">
+		<p>Top-Level Section</p>
+		<a class="section-home-link" href={sectionHref}>
+			<span class="section-home-copy">
+				<strong>{sectionLabel}</strong>
+				{sectionMeta && <span>{sectionMeta}</span>}
+			</span>
+			<span class="section-home-arrow" aria-hidden="true">↗</span>
+		</a>
+		{sectionDescription && <small>{sectionDescription}</small>}
+	</div>
+
+	<div class="local-nav-heading">
+		<strong>{sectionLabel || "当前目录"}</strong>
+	</div>
+
+	<SidebarPersister>
+		<SidebarTree sublist={transformedSidebar} directoryHrefs={directoryHrefs} />
+	</SidebarPersister>
+</div>
+
+<div class="md:sl-hidden">
+	<MobileMenuFooter />
+</div>
+
+<style>
+	@layer starlight.core {
+		.custom-sidebar {
+			display: grid;
+			gap: 1rem;
+		}
+
+		.sidebar-context {
+			padding: 0.75rem 0.75rem 0.75rem 1.1rem;
+			border-left: 4px solid #3D50F5;
+			position: relative;
+		}
+
+		.sidebar-context::after {
+			content: '';
+			position: absolute;
+			bottom: -0.6rem;
+			left: 0;
+			right: 0;
+			height: 1px;
+			background: linear-gradient(to right, #3D50F5, transparent 75%);
+		}
+
+		.sidebar-context p,
+		.sidebar-context span {
+			margin: 0;
+			font-size: 0.75rem;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			color: var(--sl-color-gray-3);
+		}
+
+		.section-home-link {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.5rem;
+			text-decoration: none;
+			color: inherit;
+			transition: color 180ms ease;
+		}
+
+		.section-home-link:hover,
+		.section-home-link:focus-visible {
+			color: var(--sl-color-white);
+		}
+
+		.section-home-copy {
+			display: grid;
+			flex: 1;
+			gap: 0.15rem;
+			min-width: 0;
+		}
+
+		.section-home-copy strong {
+			color: var(--sl-color-white);
+			font-size: 1.1rem;
+			font-weight: 700;
+			letter-spacing: -0.02em;
+			line-height: 1.2;
+			text-transform: none;
+		}
+
+		.section-home-arrow {
+			font-size: 0.85rem;
+			color: #3D50F5;
+			transition: transform 180ms ease;
+		}
+
+		.section-home-link:hover .section-home-arrow,
+		.section-home-link:focus-visible .section-home-arrow {
+			transform: translate(0.12rem, -0.12rem);
+		}
+
+		.sidebar-context small {
+			color: var(--sl-color-gray-3);
+			line-height: 1.55;
+		}
+
+		.local-nav-heading {
+			padding: 0.6rem 0.75rem 0.6rem 1.1rem;
+			border-left: 4px solid #3D50F5;
+			position: relative;
+		}
+
+		.local-nav-heading::after {
+			content: '';
+			position: absolute;
+			bottom: -0.6rem;
+			left: 0;
+			right: 0;
+			height: 1px;
+			background: linear-gradient(to right, #3D50F5, transparent 75%);
+		}
+
+		.local-nav-heading strong {
+			display: block;
+			margin: 0;
+			color: var(--sl-color-white);
+			font-size: 1.15rem;
+			font-weight: 700;
+			letter-spacing: -0.02em;
+			line-height: 1.2;
+		}
+	}
+</style>

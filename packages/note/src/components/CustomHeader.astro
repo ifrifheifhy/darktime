@@ -1,0 +1,340 @@
+---
+import config from "virtual:starlight/user-config";
+import Search from "virtual:starlight/components/Search";
+import SiteTitle from "virtual:starlight/components/SiteTitle";
+import HeaderThemeToggle from "./HeaderThemeToggle.astro";
+import TopDomainNav from "./TopDomainNav.astro";
+
+const shouldRenderSearch =
+	config.pagefind || config.components.Search !== "@astrojs/starlight/components/Search.astro";
+const mobileMenuLabel = Astro.locals.t("menuButton.accessibleLabel");
+---
+
+<div class="custom-header">
+	<div class="brand-slot">
+		<SiteTitle />
+	</div>
+
+	<div class="nav-slot sl-hidden lg:sl-flex">
+		<TopDomainNav mode="desktop" />
+	</div>
+
+	<div class="actions-slot print:hidden">
+		<div class="search-slot">
+			{shouldRenderSearch && <Search class="header-search-action" />}
+		</div>
+
+		<div class="mobile-menu-slot md:sl-hidden">
+			<button
+				type="button"
+				class="mobile-menu-proxy"
+				data-mobile-menu-proxy
+				aria-expanded="false"
+				aria-controls="starlight__sidebar"
+				aria-label={mobileMenuLabel}
+			>
+				<svg class="open-menu" aria-hidden="true" viewBox="0 0 16 16" fill="none">
+					<path
+						d="M2.5 4h11M2.5 8h11M2.5 12h11"
+						stroke="currentColor"
+						stroke-linecap="round"
+						stroke-width="1.7"
+					/>
+				</svg>
+				<svg class="close-menu" aria-hidden="true" viewBox="0 0 16 16" fill="none">
+					<path
+						d="M4 4l8 8M12 4l-8 8"
+						stroke="currentColor"
+						stroke-linecap="round"
+						stroke-width="1.7"
+					/>
+				</svg>
+			</button>
+		</div>
+
+		<div class="theme-slot sl-hidden md:sl-flex">
+			<HeaderThemeToggle />
+		</div>
+	</div>
+</div>
+
+<script>
+	class MobileMenuProxyController {
+		constructor() {
+			const proxy = document.querySelector("[data-mobile-menu-proxy]");
+			const nativeToggle = document.querySelector("nav.sidebar > starlight-menu-button");
+			const nativeButton = nativeToggle?.querySelector("button");
+
+			if (!(proxy instanceof HTMLButtonElement) || !(nativeToggle instanceof HTMLElement) || !(nativeButton instanceof HTMLButtonElement)) {
+				return;
+			}
+
+			const syncState = () => {
+				proxy.setAttribute("aria-expanded", nativeToggle.getAttribute("aria-expanded") ?? "false");
+			};
+
+			proxy.addEventListener("click", () => {
+				nativeButton.click();
+				syncState();
+			});
+
+			new MutationObserver(syncState).observe(nativeToggle, {
+				attributes: true,
+				attributeFilter: ["aria-expanded"],
+			});
+
+			syncState();
+		}
+	}
+
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", () => new MobileMenuProxyController(), { once: true });
+	} else {
+		new MobileMenuProxyController();
+	}
+</script>
+
+<style>
+	@layer starlight.core {
+		:global(.header) {
+			border-bottom-color: color-mix(in srgb, var(--sl-color-gray-5) 16%, transparent);
+			background: color-mix(in srgb, var(--sl-color-bg-nav) 90%, transparent);
+			box-shadow: 0 1px 0 color-mix(in srgb, var(--sl-color-gray-5) 10%, transparent);
+			backdrop-filter: blur(24px) saturate(0.92);
+			-webkit-backdrop-filter: blur(24px) saturate(0.92);
+		}
+
+		.custom-header {
+			display: grid;
+			grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+			align-items: center;
+			gap: clamp(0.9rem, 2vw, 2rem);
+			height: 100%;
+			min-height: 3.25rem;
+			position: relative;
+		}
+
+		.brand-slot {
+			min-width: 0;
+			max-width: min(22rem, 36vw);
+		}
+
+		:global(.custom-header .brand-slot .site-title) {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.8rem;
+			overflow: hidden;
+			max-width: 100%;
+			text-decoration: none;
+		}
+
+		:global(.custom-header .site-title),
+		:global(.custom-header .site-title a) {
+			color: var(--sl-color-white);
+		}
+
+		:global(.custom-header .brand-slot .site-title img) {
+			width: clamp(2rem, 1.6rem + 0.9vw, 2.45rem);
+			height: clamp(2rem, 1.6rem + 0.9vw, 2.45rem);
+			padding: 0.15rem;
+			flex-shrink: 0;
+			filter: drop-shadow(0 10px 18px color-mix(in srgb, #3d50f5 28%, transparent));
+			transition: transform 180ms ease;
+		}
+
+		:global(.custom-header .brand-slot .site-title span) {
+			display: block;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			font-size: clamp(1rem, 0.92rem + 0.34vw, 1.16rem);
+			font-weight: 800;
+			letter-spacing: -0.035em;
+			transition: transform 180ms ease;
+		}
+
+		:global(.custom-header .brand-slot .site-title:hover img),
+		:global(.custom-header .brand-slot .site-title:focus-visible img),
+		:global(.custom-header .brand-slot .site-title:hover span),
+		:global(.custom-header .brand-slot .site-title:focus-visible span) {
+			transform: translateY(-1px);
+		}
+
+		.nav-slot {
+			position: absolute;
+			inset-inline: 0;
+			width: fit-content;
+			margin-inline: auto;
+			height: 100%;
+			display: flex;
+			align-items: stretch;
+		}
+
+		.actions-slot {
+			grid-column: 3;
+			display: flex;
+			align-items: center;
+			justify-content: flex-end;
+			gap: 0.65rem;
+			min-width: 0;
+		}
+
+		.search-slot,
+		.mobile-menu-slot,
+		.theme-slot {
+			display: flex;
+			align-items: center;
+		}
+
+		.actions-slot :global(site-search button[data-open-modal]),
+		.actions-slot .mobile-menu-proxy {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 2.5rem;
+			height: 2.5rem;
+			padding: 0;
+			border: 1px solid color-mix(in srgb, var(--sl-color-gray-5) 20%, transparent);
+			border-radius: 999px;
+			background: color-mix(in srgb, var(--sl-color-bg-nav) 94%, transparent);
+			color: var(--sl-color-gray-2);
+			box-shadow: none;
+			cursor: pointer;
+			transition:
+				border-color 180ms ease,
+				background-color 180ms ease,
+				color 180ms ease,
+				transform 180ms ease;
+		}
+
+		.actions-slot :global(site-search button[data-open-modal]:hover),
+		.actions-slot :global(site-search button[data-open-modal]:focus-visible),
+		.actions-slot .mobile-menu-proxy:hover,
+		.actions-slot .mobile-menu-proxy:focus-visible {
+			border-color: color-mix(in srgb, var(--sl-color-accent-high) 28%, var(--sl-color-gray-5));
+			background: color-mix(in srgb, var(--sl-color-bg-nav) 98%, var(--sl-color-accent) 6%);
+			color: var(--sl-color-white);
+			transform: translateY(-1px);
+		}
+
+		.actions-slot :global(site-search button[data-open-modal]:focus-visible),
+		.actions-slot .mobile-menu-proxy:focus-visible {
+			outline: 2px solid var(--sl-color-accent);
+			outline-offset: 2px;
+		}
+
+		.actions-slot :global(site-search button[data-open-modal] svg),
+		.actions-slot .mobile-menu-proxy svg {
+			width: 1rem;
+			height: 1rem;
+			min-width: 1rem;
+			min-height: 1rem;
+			font-size: 1rem;
+			flex-shrink: 0;
+			display: block;
+		}
+
+		.search-slot {
+			min-width: 0;
+		}
+
+		.actions-slot :global(site-search button[data-open-modal]) {
+			position: static;
+			inset: auto;
+			width: 2.5rem;
+			min-width: 2.5rem;
+			max-width: none;
+			padding: 0;
+			gap: 0;
+		}
+
+		.actions-slot :global(site-search button[data-open-modal] > span),
+		.actions-slot :global(site-search button[data-open-modal] > kbd) {
+			display: none !important;
+		}
+
+		.actions-slot .mobile-menu-proxy[aria-expanded="true"] {
+			background: color-mix(in srgb, var(--sl-color-bg-nav) 98%, var(--sl-color-accent) 12%);
+			color: var(--sl-color-white);
+		}
+
+		.actions-slot .mobile-menu-proxy[aria-expanded="true"] .open-menu {
+			display: none;
+		}
+
+		.actions-slot .mobile-menu-proxy:not([aria-expanded="true"]) .close-menu {
+			display: none;
+		}
+
+		@media (max-width: 63.999rem) {
+			.custom-header {
+				grid-template-columns: minmax(0, 1fr) auto;
+			}
+
+			.brand-slot {
+				max-width: none;
+			}
+		}
+
+		@media (max-width: 49.999rem) {
+			:global([data-has-sidebar] .header) {
+				padding-inline-end: var(--sl-nav-pad-x);
+			}
+
+			:global(nav.sidebar > starlight-menu-button) {
+				display: none;
+			}
+
+			.actions-slot :global(site-search button[data-open-modal]),
+			.actions-slot .mobile-menu-proxy {
+				width: var(--sl-menu-button-size);
+				height: var(--sl-menu-button-size);
+				min-width: var(--sl-menu-button-size);
+			}
+
+			:global(.custom-header .brand-slot .site-title) {
+				gap: 0.65rem;
+			}
+
+			:global(.custom-header .brand-slot .site-title span) {
+				font-size: 1rem;
+			}
+		}
+
+		@media (min-width: 64rem) {
+			:global(:root[data-has-sidebar]) {
+				--__sidebar-pad: calc(2 * var(--sl-nav-pad-x));
+			}
+
+			:global(:root:not([data-has-toc])) {
+				--__toc-width: 0rem;
+			}
+
+			.custom-header {
+				--__sidebar-width: max(
+					0rem,
+					var(--sl-content-inline-start, 0rem) - var(--sl-nav-pad-x)
+				);
+				--__main-column-fr: calc(
+					(
+							100% + var(--__sidebar-pad, 0rem) -
+								var(--__toc-width, var(--sl-sidebar-width)) -
+								(2 * var(--__toc-width, var(--sl-nav-pad-x))) -
+								var(--sl-content-inline-start, 0rem) - var(--sl-content-width)
+						) / 2
+				);
+				grid-template-columns:
+					minmax(
+						calc(
+							var(--__sidebar-width) +
+								max(0rem, var(--__main-column-fr) - var(--sl-nav-gap))
+						),
+						auto
+					)
+					minmax(0, var(--sl-content-width))
+					auto;
+				gap: clamp(1.25rem, 2.2vw, 2.75rem);
+			}
+		}
+	}
+</style>

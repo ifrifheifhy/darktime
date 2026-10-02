@@ -1,0 +1,270 @@
+---
+import { getSiteConfig, isExternalHref } from '../../../../content/site-config'
+import {
+  profile,
+  destinations,
+  featuredRepos,
+} from '../lib/main-site-config'
+import { initRepoCache, getRepoCached } from '../lib/github'
+import { getRecentNotes } from '../lib/recent-notes'
+
+const recentNotes = getRecentNotes()
+const noteSite = getSiteConfig('note')
+const noteSiteExternal = isExternalHref(noteSite.href)
+
+await initRepoCache(featuredRepos)
+const repos = featuredRepos.map((repo) => ({
+  ...getRepoCached(repo.owner, repo.name),
+  href: `https://github.com/${repo.owner}/${repo.name}`,
+  description: repo.description,
+}))
+
+function formatDate(dateString: string) {
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(dateString))
+}
+
+function formatRepoCount(count: number) {
+  return new Intl.NumberFormat('en-US', {
+    notation: count >= 1000 ? 'compact' : 'standard',
+    maximumFractionDigits: 1,
+  }).format(count)
+}
+
+function getGitHubAvatar(owner: string) {
+  return `https://github.com/${owner}.png?size=48`
+}
+
+const emailLink = profile.links.find((link) => link.icon === 'email')
+const contactEmail = emailLink?.href.replace('mailto:', '') ?? 'contact@darktime.cn'
+const [contactEmailLocal = contactEmail, contactEmailDomain = ''] = contactEmail.split('@')
+const contactEmailIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" xmlns="http://www.w3.org/2000/svg"><path d="M3.75 6.75h16.5v10.5H3.75z"/><path d="m4.5 7.5 7.5 5.25L19.5 7.5"/></svg>`
+---
+
+<main class="w-full">
+  <!-- Hero Section -->
+  <section class="mx-auto w-full max-w-4xl pt-36 pb-16 px-6">
+    <div class="space-y-4">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium tracking-wider uppercase bg-[#efe7d8] text-[#9a6b27] dark:bg-[#221f1b] dark:text-[#cba153] border border-[#ded5c3] dark:border-[#38332a]">
+        darktime · 个人小站
+      </div>
+
+      <h1 class="home-heading-1 font-bold text-[#2c2520] dark:text-[#e6dfd3]">
+        darktime
+      </h1>
+
+      <p class="home-motto text-[#9a6b27] dark:text-[#cba153] italic">
+        "{profile.motto}"
+      </p>
+
+      <p class="max-w-2xl text-base leading-relaxed text-[#6e6459] dark:text-[#9c9486] pt-2">
+        在暗夜与微光中，专注两件事：<strong>系统性的研习记录</strong> 与 <strong>切实落地的项目代码</strong>。拒绝浮华装饰，让文字与构想重拾古典手稿般的温度。
+      </p>
+    </div>
+  </section>
+
+  <!-- Two Pillars Section: 学习 & 项目 -->
+  <section class="mx-auto w-full max-w-4xl px-6 py-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Pillar 1: 学习 (Study) -->
+      <a
+        href={noteSite.href}
+        target={noteSiteExternal ? '_blank' : undefined}
+        rel={noteSiteExternal ? 'noopener noreferrer' : undefined}
+        class="group relative overflow-hidden rounded-xl border border-[#ded5c3] dark:border-[#38332a] bg-[#fbf8f1] dark:bg-[#1e1c1a] p-8 shadow-sm transition-all duration-300 hover:border-[#9a6b27] dark:hover:border-[#cba153] hover:shadow-lg"
+      >
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-serif tracking-widest text-[#9a6b27] dark:text-[#cba153] uppercase">
+            卷一 · 研习
+          </span>
+          <span class="text-[#9a6b27] dark:text-[#cba153] transition-transform duration-300 group-hover:translate-x-1">
+            →
+          </span>
+        </div>
+
+        <h3 class="mt-4 font-serif text-2xl font-bold text-[#2c2520] dark:text-[#e6dfd3]">
+          学习 · Knowledge Base
+        </h3>
+
+        <p class="mt-3 text-sm leading-relaxed text-[#6e6459] dark:text-[#9c9486]">
+          深度学习理论、论文精读笔记、精巧算法解析与工具实战经验。按主题分流，支持公式推导与全文检索。
+        </p>
+
+        <div class="mt-6 flex flex-wrap gap-2 text-xs text-[#9a6b27] dark:text-[#cba153]">
+          <span class="px-2 py-0.5 rounded bg-[#efe7d8] dark:bg-[#272421]">深度学习</span>
+          <span class="px-2 py-0.5 rounded bg-[#efe7d8] dark:bg-[#272421]">论文精读</span>
+          <span class="px-2 py-0.5 rounded bg-[#efe7d8] dark:bg-[#272421]">代码算法</span>
+          <span class="px-2 py-0.5 rounded bg-[#efe7d8] dark:bg-[#272421]">随感漫谈</span>
+        </div>
+      </a>
+
+      <!-- Pillar 2: 项目 (Projects) -->
+      <a
+        href="#projects"
+        class="group relative overflow-hidden rounded-xl border border-[#ded5c3] dark:border-[#38332a] bg-[#fbf8f1] dark:bg-[#1e1c1a] p-8 shadow-sm transition-all duration-300 hover:border-[#9a6b27] dark:hover:border-[#cba153] hover:shadow-lg"
+      >
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-serif tracking-widest text-[#9a6b27] dark:text-[#cba153] uppercase">
+            卷二 · 实践
+          </span>
+          <span class="text-[#9a6b27] dark:text-[#cba153] transition-transform duration-300 group-hover:translate-x-1">
+            ↓
+          </span>
+        </div>
+
+        <h3 class="mt-4 font-serif text-2xl font-bold text-[#2c2520] dark:text-[#e6dfd3]">
+          项目 · Craft & Works
+        </h3>
+
+        <p class="mt-3 text-sm leading-relaxed text-[#6e6459] dark:text-[#9c9486]">
+          工程系统、自动化脚本、研究复现工具与开源仓库。从点滴灵感到完整实现的沉淀展示。
+        </p>
+
+        <div class="mt-6 flex flex-wrap gap-2 text-xs text-[#9a6b27] dark:text-[#cba153]">
+          <span class="px-2 py-0.5 rounded bg-[#efe7d8] dark:bg-[#272421]">开源工具</span>
+          <span class="px-2 py-0.5 rounded bg-[#efe7d8] dark:bg-[#272421]">系统架构</span>
+          <span class="px-2 py-0.5 rounded bg-[#efe7d8] dark:bg-[#272421]">工程落地</span>
+          <span class="px-2 py-0.5 rounded bg-[#efe7d8] dark:bg-[#272421]">GitHub 仓库</span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Recent Notes (最新研习) -->
+  <section class="mx-auto w-full max-w-4xl px-6 py-16">
+    <div class="flex items-end justify-between border-b border-[#ded5c3] dark:border-[#38332a] pb-4">
+      <div>
+        <h2 class="home-heading-2 font-bold text-[#2c2520] dark:text-[#e6dfd3]">
+          最新研习
+        </h2>
+        <p class="mt-1 text-sm text-[#6e6459] dark:text-[#9c9486]">
+          源自知识库的沉淀与持续更新
+        </p>
+      </div>
+      <a
+        href={noteSite.href}
+        target={noteSiteExternal ? '_blank' : undefined}
+        rel={noteSiteExternal ? 'noopener noreferrer' : undefined}
+        class="text-sm font-medium text-[#9a6b27] dark:text-[#cba153] hover:underline"
+      >
+        浏览全部文章 →
+      </a>
+    </div>
+
+    {
+      recentNotes.length > 0 ? (
+        <ol class="divide-y divide-[#ded5c3] dark:divide-[#38332a]">
+          {
+            recentNotes.map((note, index) => (
+              <li>
+                <a
+                  href={note.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="group flex flex-col md:flex-row md:items-baseline justify-between py-5 gap-2 transition-colors hover:text-[#9a6b27] dark:hover:text-[#cba153]"
+                >
+                  <div class="flex items-baseline gap-4 min-w-0">
+                    <span class="font-serif text-sm tracking-wider text-[#9a6b27] dark:text-[#cba153]">
+                      {(index + 1).toString().padStart(2, '0')}.
+                    </span>
+                    <span class="font-serif text-lg font-medium text-[#2c2520] dark:text-[#e6dfd3] group-hover:text-[#9a6b27] dark:group-hover:text-[#cba153] truncate">
+                      {note.title}
+                    </span>
+                  </div>
+
+                  <div class="flex items-center gap-4 text-xs text-[#6e6459] dark:text-[#9c9486] shrink-0">
+                    <time datetime={note.updated}>{formatDate(note.updated)}</time>
+                    <span class="group-hover:translate-x-1 transition-transform">→</span>
+                  </div>
+                </a>
+              </li>
+            ))
+          }
+        </ol>
+      ) : (
+        <div class="mt-6 p-6 rounded-lg border border-dashed border-[#ded5c3] dark:border-[#38332a] text-center text-sm text-[#6e6459] dark:text-[#9c9486]">
+          目前知识库正在整理中。
+        </div>
+      )
+    }
+  </section>
+
+  <!-- Featured Projects (精选项目展台) -->
+  <section id="projects" class="scroll-mt-24 mx-auto w-full max-w-4xl px-6 py-16">
+    <div class="border-b border-[#ded5c3] dark:border-[#38332a] pb-4">
+      <h2 class="home-heading-2 font-bold text-[#2c2520] dark:text-[#e6dfd3]">
+        精选项目
+      </h2>
+      <p class="mt-1 text-sm text-[#6e6459] dark:text-[#9c9486]">
+        思想落地为工具，开源于社区
+      </p>
+    </div>
+
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+      {
+        repos.map((repo) => (
+          <a
+            href={repo.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group flex flex-col justify-between rounded-xl border border-[#ded5c3] dark:border-[#38332a] bg-[#fbf8f1] dark:bg-[#1e1c1a] p-6 shadow-sm transition-all duration-300 hover:border-[#9a6b27] dark:hover:border-[#cba153] hover:shadow-md"
+          >
+            <div>
+              <div class="flex items-center justify-between">
+                <span class="font-mono text-xs text-[#9a6b27] dark:text-[#cba153]">
+                  {repo.language || 'Code'}
+                </span>
+                <span class="text-[#6e6459] dark:text-[#9c9486] transition-transform duration-300 group-hover:translate-x-1">
+                  ↗
+                </span>
+              </div>
+
+              <h4 class="mt-2 font-serif text-xl font-bold text-[#2c2520] dark:text-[#e6dfd3] group-hover:text-[#9a6b27] dark:group-hover:text-[#cba153] transition-colors">
+                {repo.name}
+              </h4>
+
+              <p class="mt-2 text-sm leading-relaxed text-[#6e6459] dark:text-[#9c9486]">
+                {repo.description}
+              </p>
+            </div>
+
+            <div class="mt-6 flex items-center gap-4 text-xs text-[#6e6459] dark:text-[#9c9486] pt-4 border-t border-[#ded5c3]/50 dark:border-[#38332a]/50">
+              <span class="inline-flex items-center gap-1">
+                ★ {formatRepoCount(repo.stars)}
+              </span>
+              <span class="inline-flex items-center gap-1">
+                ⌥ {formatRepoCount(repo.forks)}
+              </span>
+            </div>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- Contact & Epilogue -->
+  <section class="mx-auto w-full max-w-4xl px-6 py-16">
+    <div class="rounded-xl border border-[#ded5c3] dark:border-[#38332a] bg-[#efe7d8]/50 dark:bg-[#181614] p-8 text-center sm:text-left sm:flex sm:items-center sm:justify-between">
+      <div>
+        <h3 class="font-serif text-2xl font-bold text-[#2c2520] dark:text-[#e6dfd3]">
+          研习与探讨
+        </h3>
+        <p class="mt-1 text-sm text-[#6e6459] dark:text-[#9c9486]">
+          若有学术探讨、技术交流或项目探讨，欢迎来信。
+        </p>
+      </div>
+
+      <div class="mt-4 sm:mt-0 flex justify-center gap-3">
+        <a
+          href={emailLink?.href ?? 'mailto:contact@darktime.cn'}
+          class="inline-flex items-center gap-2 rounded-lg bg-[#9a6b27] dark:bg-[#cba153] px-5 py-2.5 text-sm font-semibold text-white dark:text-[#151413] shadow-sm hover:opacity-90 transition-opacity"
+        >
+          发封邮件
+        </a>
+      </div>
+    </div>
+  </section>
+</main>

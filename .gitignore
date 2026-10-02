@@ -1,0 +1,53 @@
+# build output
+dist/
+
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# environment variables
+.env
+.env.production
+.env.local
+
+# pagefind search index
+public/pagefind/
+
+# macOS-specific files
+.DS_Store
+
+# editor settings
+.idea/
+.vscode/
+
+# PM2 config (contains server env vars, never commit)
+ecosystem.config.cjs
+
+# reference implementation
+reference/
+.ai_docs
+.codex/skills/ui-ux-pro-max
+
+# note package generated (synced from content/note via sync-starlight-content.mjs)
+packages/note/src/content/docs/
+# demo/template content not sourced from content/note
+packages/note/src/content/posts/
+packages/note/src/content/spec/
+
+# starlight template leftover assets (not referenced in source)
+packages/note/src/assets/showcase/
+packages/note/src/assets/testimonials/
+packages/note/src/assets/themes/
+packages/note/public/og.jpg
+packages/note/src/assets/hero-star.webp
+
+# home package generated
+packages/home/dist/

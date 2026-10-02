@@ -1,0 +1,73 @@
+---
+import NavComponent from '../components/NavComponent.astro'
+import '../styles/global.css'
+
+interface Props {
+  title?: string
+  description?: string
+}
+
+const {
+  title = 'darktime',
+  description = 'darktime — 于暗夜中研磨光景，在书卷与代码间沉淀。包含学习知识库与项目实践。',
+} = Astro.props
+---
+
+<!doctype html>
+<html lang="zh-CN" class="scroll-smooth">
+  <head>
+    <!-- 主题初始化：阻塞执行，防止闪烁 -->
+    <script is:inline>
+      (function () {
+        const saved = localStorage.getItem('theme')
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        const isDark = saved === 'dark' || (!saved && prefersDark)
+        if (isDark) {
+          document.documentElement.classList.add('dark')
+        }
+      })()
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+    <link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body
+    class="font-serif text-lg antialiased min-h-screen flex flex-col bg-[#f5f0e6] text-[#2c2520] dark:bg-[#151413] dark:text-[#e6dfd3]"
+  >
+    <NavComponent />
+
+    <slot />
+
+    <footer class="mt-auto border-t border-[#ded5c3] bg-[#efe7d8] text-[#6e6459] dark:border-[#38332a] dark:bg-[#11100f] dark:text-[#9c9486]">
+      <div
+        class="mx-auto flex flex-col items-center justify-between gap-4 px-6 py-10 text-sm max-w-5xl sm:flex-row sm:px-8"
+      >
+        <div class="text-center sm:text-left tracking-wide">
+          <div>© {new Date().getFullYear()} <span class="font-semibold text-[#9a6b27] dark:text-[#cba153]">darktime.cn</span>. All rights reserved.</div>
+        </div>
+
+        <div class="flex items-center gap-6 text-xs">
+          <a
+            href="https://beian.miit.gov.cn/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="transition-colors hover:text-[#9a6b27] dark:hover:text-[#cba153]"
+          >
+            沪ICP备2025148441号
+          </a>
+          <a
+            href="https://beian.mps.gov.cn/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="transition-colors hover:text-[#9a6b27] dark:hover:text-[#cba153]"
+          >
+            沪公网安备31011502405545号
+          </a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

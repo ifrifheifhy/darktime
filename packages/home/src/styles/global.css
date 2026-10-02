@@ -1,0 +1,131 @@
+/* ---------- Google Fonts 古典油画衬线体 ---------- */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif+SC:wght@300;400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+/* Plugins */
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';
+
+/* Theme Customizations */
+@theme {
+  --font-serif:
+    'Cormorant Garamond', 'EB Garamond', 'Noto Serif SC', 'Songti SC', 'STSong',
+    'SimSun', Georgia, serif;
+  --font-sans:
+    'EB Garamond', 'Noto Serif SC', 'Songti SC', 'STSong', Georgia, serif;
+}
+
+/* Toggle dark mode manually */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --canvas-bg: #f5f0e6;
+  --canvas-surface: #fbf8f1;
+  --canvas-surface-hover: #eee7d8;
+  --canvas-border: #ded5c3;
+  --canvas-text: #2c2520;
+  --canvas-text-muted: #6e6459;
+
+  --accent-gold: #9a6b27;
+  --accent-gold-high: #cba153;
+  --accent-lapis: #2e4b73;
+
+  --home-heading-1-size: clamp(3rem, 5.5vw, 4.25rem);
+  --home-heading-1-line-height: 1.1;
+  --home-heading-2-size: clamp(2rem, 3.5vw, 2.65rem);
+  --home-heading-2-line-height: 1.2;
+  --home-motto-size: clamp(1.4rem, 2.5vw, 1.95rem);
+  --home-motto-line-height: 1.35;
+  --home-heading-tracking: 0.03em;
+
+  --home-prose-heading-bar: #9a6b27;
+  --home-prose-heading-dot: #cba153;
+}
+
+:root.dark {
+  --canvas-bg: #151413;
+  --canvas-surface: #1e1c1a;
+  --canvas-surface-hover: #272421;
+  --canvas-border: #38332a;
+  --canvas-text: #e6dfd3;
+  --canvas-text-muted: #9c9486;
+
+  --accent-gold: #cba153;
+  --accent-gold-high: #dfb76c;
+  --accent-lapis: #3d5a80;
+
+  --home-prose-heading-bar: #cba153;
+  --home-prose-heading-dot: #dfb76c;
+}
+
+body {
+  background-color: var(--canvas-bg);
+  color: var(--canvas-text);
+  font-family: var(--font-serif);
+  letter-spacing: 0.01em;
+}
+
+.home-heading-1 {
+  font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+  font-size: var(--home-heading-1-size);
+  line-height: var(--home-heading-1-line-height);
+  letter-spacing: var(--home-heading-tracking);
+}
+
+.home-heading-2 {
+  font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+  font-size: var(--home-heading-2-size);
+  line-height: var(--home-heading-2-line-height);
+  letter-spacing: var(--home-heading-tracking);
+}
+
+.home-motto {
+  font-family: 'Cormorant Garamond', 'Noto Serif SC', serif;
+  font-size: var(--home-motto-size);
+  line-height: var(--home-motto-line-height);
+  letter-spacing: 0.04em;
+}
+
+.home-prose h2 {
+  font-size: var(--home-heading-2-size);
+  line-height: var(--home-heading-2-line-height);
+  letter-spacing: 0.02em;
+  margin-top: 3rem;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--home-prose-heading-bar);
+}
+
+.home-prose h3 {
+  position: relative;
+  margin-top: 2rem;
+}
+
+.home-prose h3::before {
+  content: "";
+  display: inline-block;
+  width: 0.35rem;
+  height: 0.35rem;
+  margin-right: 0.55rem;
+  border-radius: 999px;
+  background: var(--home-prose-heading-dot);
+  vertical-align: 0.16em;
+}
+
+.vintage-divider {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--canvas-border), transparent);
+}
+
+.vintage-card {
+  background-color: var(--canvas-surface);
+  border: 1px solid var(--canvas-border);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.vintage-card:hover {
+  background-color: var(--canvas-surface-hover);
+  border-color: var(--accent-gold);
+  box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.12);
+}

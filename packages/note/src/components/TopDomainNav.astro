@@ -1,0 +1,804 @@
+---
+import DomainFlyout from "./DomainFlyout.astro";
+import SiteSwitcherFlyout from "./SiteSwitcherFlyout.astro";
+import {
+	getSiteNavigation,
+	inferRouteNavigationContext,
+	type NavSectionPreview,
+} from "../lib/site-navigation";
+import { normalizeNavigationPath } from "../lib/navigation-metadata";
+
+interface Props {
+	mode?: "desktop" | "mobile";
+}
+
+const { mode = "desktop" } = Astro.props;
+const navigation = await getSiteNavigation();
+const routeId = Astro.locals.starlightRoute.entry.id;
+const routeContext = inferRouteNavigationContext(routeId);
+const currentSectionKey = routeContext.sectionKey;
+const currentSlug = normalizeNavigationPath(routeId);
+const mobileSections = [...navigation.primarySections, ...navigation.overflowSections];
+
+function isCurrentSection(section: NavSectionPreview): boolean {
+	return section.key === currentSectionKey;
+}
+
+const hasOverflowCurrentSection = navigation.overflowSections.some(isCurrentSection);
+---
+
+{
+	mode === "desktop" ? (
+		<top-domain-nav data-current-section={currentSectionKey ?? ""}>
+			<div class="desktop-domain-nav" data-domain-root data-state="closed">
+				<nav aria-label="主分区导航" class="desktop-domain-inner" data-trigger-nav>
+					<ul class="trigger-list" role="list">
+						<li class="site-switcher-item">
+							<a
+								href={navigation.items.find((i) => i.key === "note")?.href ?? "/"}
+								class:list={[
+									"domain-trigger",
+									"site-switcher-trigger",
+									{ current: routeContext.domain === "note" },
+								]}
+								data-domain-trigger="site-switcher"
+								data-domain-active={routeContext.domain === "note" ? "true" : "false"}
+								aria-controls="domain-panel-site-switcher"
+								aria-expanded="false"
+							>
+								<span class="label-full">Note · 笔记站</span>
+								<span class="label-short">Note</span>
+							</a>
+						</li>
+
+						{navigation.primarySections.map((section) => (
+							<li>
+								<a
+									href={section.href}
+									class:list={["domain-trigger", { current: isCurrentSection(section) }]}
+									data-domain-trigger={section.key}
+									data-domain-active={isCurrentSection(section) ? "true" : "false"}
+									aria-controls={`domain-panel-${section.key}`}
+									aria-expanded="false"
+								>
+									<span class="label-full">{section.label}</span>
+									<span class="label-short">{section.shortLabel}</span>
+								</a>
+							</li>
+						))}
+
+						{
+							navigation.overflowSections.length > 0 && (
+								<li class="more-nav-item">
+									<details class="more-nav" data-more-nav>
+										<summary class={hasOverflowCurrentSection ? "more-trigger current" : "more-trigger"}>
+											<span>更多</span>
+										</summary>
+
+										<div class="more-panel" role="menu" aria-label="更多栏目">
+											<ul role="list">
+												{navigation.overflowSections.map((section) => (
+													<li>
+														<a
+															href={section.href}
+															role="menuitem"
+															class:list={["more-link", { current: isCurrentSection(section) }]}
+														>
+															<span>{section.label}</span>
+															<small>{section.articleCount} 篇</small>
+														</a>
+													</li>
+												))}
+											</ul>
+										</div>
+									</details>
+								</li>
+							)
+						}
+					</ul>
+				</nav>
+
+				<div class="globalnav-curtain" data-domain-curtain aria-hidden="true"></div>
+
+				<div class="globalnav-flyout" data-domain-flyout aria-hidden="true">
+					<div class="globalnav-flyout-shell">
+						<div class="globalnav-flyout-inner">
+							<SiteSwitcherFlyout
+								items={navigation.items}
+								currentDomain={routeContext.domain}
+							/>
+							{navigation.primarySections.map((section) => (
+								<DomainFlyout
+									section={section}
+									currentSectionKey={currentSectionKey}
+									currentSlug={currentSlug}
+								/>
+							))}
+						</div>
+					</div>
+				</div>
+			</div>
+		</top-domain-nav>
+	) : (
+		<div class="mobile-domain-nav">
+			<div class="mobile-nav-header">
+				<p>栏目导航</p>
+				<strong>{navigation.noteSections.find((section) => section.key === currentSectionKey)?.label ?? "全部章节"}</strong>
+			</div>
+
+			<ul class="mobile-domain-list" role="list">
+				{mobileSections.map((section) => (
+					<li class:list={["mobile-domain-card", { current: isCurrentSection(section) }]}>
+						<a href={section.href} class="mobile-domain-link">
+							<div class="mobile-domain-copy">
+								<span>{section.label}</span>
+								<p>{section.description}</p>
+							</div>
+							<small>{section.articleCount} 篇</small>
+						</a>
+					</li>
+				))}
+			</ul>
+		</div>
+	)
+}
+
+<script>
+	class TopDomainNav extends HTMLElement {
+		root = this.querySelector<HTMLElement>("[data-domain-root]");
+		triggerNav = this.querySelector<HTMLElement>("[data-trigger-nav]");
+		triggers = Array.from(this.querySelectorAll<HTMLElement>("[data-domain-trigger]"));
+		panels = new Map(
+			Array.from(this.querySelectorAll<HTMLElement>("[data-domain-panel]")).map((panel) => [
+				panel.dataset.domainPanel!,
+				panel,
+			])
+		);
+		flyout = this.querySelector<HTMLElement>("[data-domain-flyout]");
+		flyoutInner = this.querySelector<HTMLElement>(".globalnav-flyout-inner");
+		curtain = this.querySelector<HTMLElement>("[data-domain-curtain]");
+		moreNav = this.querySelector<HTMLDetailsElement>("[data-more-nav]");
+		closeTimer: number | undefined;
+		transitionTimer: number | undefined;
+		pointerHistory: Array<{ x: number; y: number }> = [];
+		activeKey = "";
+		renderKey = "";
+
+		connectedCallback() {
+			if (!this.root || !this.flyout) return;
+
+			this.triggerNav?.addEventListener("pointermove", this.onPointerMove);
+			this.flyout.addEventListener("pointermove", this.onPointerMove);
+			this.triggerNav?.addEventListener("pointerleave", this.onTriggerLeave);
+			this.flyout.addEventListener("pointerenter", this.cancelClose);
+			this.flyout.addEventListener("pointerleave", this.onFlyoutLeave);
+			this.addEventListener("focusout", this.onFocusOut);
+			this.curtain?.addEventListener("click", this.onCurtainClick);
+			this.moreNav?.addEventListener("toggle", this.onMoreToggle);
+			this.moreNav?.addEventListener("pointerenter", this.onMorePointerEnter);
+			document.addEventListener("click", this.onDocumentClick);
+
+			for (const trigger of this.triggers) {
+				trigger.addEventListener("pointerenter", () => this.open(trigger.dataset.domainTrigger || ""));
+				trigger.addEventListener("pointerleave", this.onTriggerItemLeave);
+				trigger.addEventListener("focusin", () => this.open(trigger.dataset.domainTrigger || ""));
+			}
+
+			document.addEventListener("keydown", this.onKeyDown);
+			window.addEventListener("resize", this.syncFlyoutLayout, { passive: true });
+			window.addEventListener("scroll", this.syncFlyoutLayout, { passive: true });
+			this.syncFlyoutHeight();
+		}
+
+		disconnectedCallback() {
+			this.triggerNav?.removeEventListener("pointermove", this.onPointerMove);
+			this.triggerNav?.removeEventListener("pointerleave", this.onTriggerLeave);
+			for (const trigger of this.triggers) {
+				trigger.removeEventListener("pointerleave", this.onTriggerItemLeave);
+			}
+			this.flyout?.removeEventListener("pointermove", this.onPointerMove);
+			this.flyout?.removeEventListener("pointerenter", this.cancelClose);
+			this.flyout?.removeEventListener("pointerleave", this.onFlyoutLeave);
+			this.removeEventListener("focusout", this.onFocusOut);
+			this.curtain?.removeEventListener("click", this.onCurtainClick);
+			this.moreNav?.removeEventListener("toggle", this.onMoreToggle);
+			this.moreNav?.removeEventListener("pointerenter", this.onMorePointerEnter);
+			document.removeEventListener("click", this.onDocumentClick);
+			document.removeEventListener("keydown", this.onKeyDown);
+			window.removeEventListener("resize", this.syncFlyoutLayout);
+			window.removeEventListener("scroll", this.syncFlyoutLayout);
+			document.documentElement.removeAttribute("data-globalnav-open");
+			document.documentElement.removeAttribute("data-globalnav-focus");
+		}
+
+		onPointerMove = (event: PointerEvent) => {
+			this.pointerHistory.push({ x: event.clientX, y: event.clientY });
+			if (this.pointerHistory.length > 8) this.pointerHistory.shift();
+		};
+
+		onTriggerLeave = (event: PointerEvent) => {
+			const nextTarget = event.relatedTarget;
+			if (nextTarget instanceof Node && (this.triggerNav?.contains(nextTarget) || this.flyout?.contains(nextTarget))) {
+				this.cancelClose();
+				return;
+			}
+
+			this.scheduleClose({ allowPointerGrace: !(nextTarget instanceof Node) });
+		};
+
+		onTriggerItemLeave = (event: PointerEvent) => {
+			const nextTarget = event.relatedTarget;
+			if (nextTarget instanceof Node) {
+				if (this.flyout?.contains(nextTarget)) return;
+				if (this.triggers.some((t) => t === nextTarget || t.contains(nextTarget))) return;
+			}
+			this.scheduleClose({ allowPointerGrace: !(nextTarget instanceof Node) });
+		};
+
+		onFlyoutLeave = (event: PointerEvent) => {
+			const nextTarget = event.relatedTarget;
+			if (nextTarget instanceof Node && (this.flyout?.contains(nextTarget) || this.triggerNav?.contains(nextTarget))) {
+				this.cancelClose();
+				return;
+			}
+
+			this.scheduleClose();
+		};
+
+		onFocusOut = (event: FocusEvent) => {
+			const nextTarget = event.relatedTarget;
+			if (!(nextTarget instanceof Node) || !this.contains(nextTarget)) {
+				this.scheduleClose();
+			}
+		};
+
+		onKeyDown = (event: KeyboardEvent) => {
+			if (event.key !== "Escape") return;
+			if (this.moreNav?.open) {
+				this.moreNav.open = false;
+				return;
+			}
+			if (this.renderKey) {
+				this.close({ restoreFocus: true });
+			}
+		};
+
+		onCurtainClick = () => {
+			this.close();
+		};
+
+		onMoreToggle = () => {
+			if (this.moreNav?.open) this.close();
+		};
+
+		onMorePointerEnter = () => {
+			if (this.renderKey) this.close();
+		};
+
+		onDocumentClick = (event: MouseEvent) => {
+			if (!this.moreNav?.open) return;
+			if (event.target instanceof Node && this.moreNav.contains(event.target)) return;
+			this.moreNav.open = false;
+		};
+
+		cancelClose = () => {
+			if (this.closeTimer) window.clearTimeout(this.closeTimer);
+			this.closeTimer = undefined;
+		};
+
+		cancelTransition() {
+			if (this.transitionTimer) window.clearTimeout(this.transitionTimer);
+			this.transitionTimer = undefined;
+		}
+
+		syncFlyoutLayout = () => {
+			if (!this.root) return;
+			const header = this.closest(".custom-header") ?? this.root;
+			const rect = header.getBoundingClientRect();
+			this.style.setProperty("--flyout-top", `${Math.max(rect.bottom, 0)}px`);
+			this.syncFlyoutHeight();
+		};
+
+		syncFlyoutHeight() {
+			if (!this.flyoutInner) return;
+
+			const activePanel = this.renderKey ? this.panels.get(this.renderKey) : undefined;
+			if (!activePanel) {
+				this.flyoutInner.style.height = "0px";
+				return;
+			}
+
+			this.flyoutInner.style.height = `${activePanel.offsetHeight}px`;
+		}
+
+		syncPresentation() {
+			if (!this.root || !this.flyout) return;
+			const state = this.root.dataset.state ?? "closed";
+			const isVisible = state !== "closed";
+			const isFocused = state === "opening" || state === "open";
+			this.flyout.setAttribute("aria-hidden", String(!isVisible));
+			this.curtain?.setAttribute("aria-hidden", String(!isVisible));
+			document.documentElement.toggleAttribute("data-globalnav-open", isVisible);
+			document.documentElement.toggleAttribute("data-globalnav-focus", isFocused);
+
+			for (const trigger of this.triggers) {
+				const isOpen = isVisible && trigger.dataset.domainTrigger === this.activeKey;
+				trigger.setAttribute("aria-expanded", String(isOpen));
+			}
+
+			for (const [panelKey, panel] of this.panels) {
+				const isActive = isVisible && panelKey === this.renderKey;
+				panel.dataset.state = isActive ? "active" : "inactive";
+				panel.setAttribute("aria-hidden", String(!isActive));
+			}
+
+			this.syncFlyoutHeight();
+		}
+
+		open(key: string) {
+			if (!this.root || !this.panels.has(key)) return;
+
+			if (this.moreNav?.open) this.moreNav.open = false;
+
+			this.cancelClose();
+			this.cancelTransition();
+			this.syncFlyoutLayout();
+			this.activeKey = key;
+			this.renderKey = key;
+
+			const state = this.root.dataset.state ?? "closed";
+			this.root.dataset.open = key;
+
+			if (state === "closed") {
+				this.root.dataset.state = "opening";
+				this.syncPresentation();
+
+				requestAnimationFrame(() => {
+					if (!this.root) return;
+					this.root.dataset.state = "open";
+					this.syncPresentation();
+				});
+				return;
+			}
+
+			this.root.dataset.state = "open";
+			this.syncPresentation();
+		}
+
+		getTrigger(key: string) {
+			return this.triggers.find((trigger) => trigger.dataset.domainTrigger === key);
+		}
+
+		close({ restoreFocus = false }: { restoreFocus?: boolean } = {}) {
+			if (!this.root || !this.renderKey) return;
+
+			const triggerToRestore = restoreFocus ? this.getTrigger(this.renderKey) : undefined;
+			this.cancelClose();
+			this.cancelTransition();
+			this.activeKey = "";
+			this.root.dataset.state = "closing";
+			this.syncPresentation();
+
+			this.transitionTimer = window.setTimeout(() => {
+				if (!this.root) return;
+				this.root.dataset.state = "closed";
+				delete this.root.dataset.open;
+				this.renderKey = "";
+				this.syncPresentation();
+
+				if (triggerToRestore instanceof HTMLElement) {
+					triggerToRestore.focus();
+				}
+			}, 180);
+		}
+
+		scheduleClose({ allowPointerGrace = false }: { allowPointerGrace?: boolean } = {}) {
+			this.cancelClose();
+
+			if (allowPointerGrace && this.renderKey && this.isPointerHeadingToFlyout()) return;
+
+			this.closeTimer = window.setTimeout(() => this.close(), 140);
+		}
+
+		isPointerHeadingToFlyout() {
+			if (!this.flyout || this.pointerHistory.length < 2) return false;
+
+			const flyoutRect = this.flyout.getBoundingClientRect();
+			const first = this.pointerHistory[0];
+			const last = this.pointerHistory[this.pointerHistory.length - 1];
+			const movingDown = last.y >= first.y - 2;
+			const withinHorizontalCorridor =
+				last.x >= flyoutRect.left - 48 && last.x <= flyoutRect.right + 48;
+			const aboveFlyout = last.y <= flyoutRect.bottom + 24;
+
+			return movingDown && withinHorizontalCorridor && aboveFlyout;
+		}
+	}
+
+	if (!customElements.get("top-domain-nav")) {
+		customElements.define("top-domain-nav", TopDomainNav);
+	}
+</script>
+
+<style>
+	@layer starlight.core {
+		top-domain-nav {
+			display: block;
+			min-width: 0;
+			width: 100%;
+			height: 100%;
+		}
+
+		.desktop-domain-nav {
+			position: relative;
+			min-width: 0;
+			width: 100%;
+			height: 100%;
+		}
+
+		.desktop-domain-inner {
+			display: flex;
+			align-items: stretch;
+			justify-content: center;
+			min-width: 0;
+			width: 100%;
+			height: 100%;
+		}
+
+		.trigger-list {
+			display: flex;
+			align-items: stretch;
+			justify-content: center;
+			gap: clamp(1.1rem, 1.8vw, 2.25rem);
+			list-style: none;
+			margin: 0;
+			padding: 0;
+			height: 100%;
+			width: 100%;
+		}
+
+		.trigger-list > li {
+			display: flex;
+			align-items: stretch;
+			height: 100%;
+		}
+
+		.domain-trigger,
+		.more-trigger {
+			display: inline-flex;
+			position: relative;
+			align-items: center;
+			justify-content: center;
+			height: 100%;
+			padding: 0 0.15rem;
+			border: 0;
+			background: transparent;
+			color: var(--sl-color-gray-2);
+			font-size: 0.94rem;
+			font-weight: 500;
+			letter-spacing: -0.012em;
+			line-height: 1;
+			text-decoration: none;
+			cursor: pointer;
+			transition:
+				color 180ms ease,
+				opacity 180ms ease;
+		}
+
+		.domain-trigger::after,
+		.more-trigger::after {
+			content: "";
+			position: absolute;
+			inset-inline: 0.15rem;
+			inset-block-end: 0.48rem;
+			height: 2px;
+			border-radius: 999px;
+			background: color-mix(in srgb, var(--sl-color-accent-high) 78%, white 22%);
+			opacity: 0;
+			transform: scaleX(0.4);
+			transform-origin: center;
+			transition:
+				opacity 180ms ease,
+				transform 180ms ease;
+		}
+
+		.more-trigger {
+			list-style: none;
+		}
+
+		.more-trigger::-webkit-details-marker {
+			display: none;
+		}
+
+		.site-switcher-trigger {
+			font-weight: 740;
+			letter-spacing: -0.022em;
+			color: var(--sl-color-white);
+		}
+
+		.site-switcher-trigger::after {
+			display: none;
+		}
+
+		.label-short {
+			display: none;
+		}
+
+		.domain-trigger:hover,
+		.domain-trigger:focus-visible,
+		.domain-trigger.current,
+		.more-trigger:hover,
+		.more-trigger:focus-visible,
+		.more-nav[open] .more-trigger,
+		.desktop-domain-nav[data-state="open"] .domain-trigger[aria-expanded="true"],
+		.desktop-domain-nav[data-state="opening"] .domain-trigger[aria-expanded="true"] {
+			color: var(--sl-color-white);
+		}
+
+		.domain-trigger.current::after,
+		.more-trigger.current::after {
+			opacity: 1;
+			transform: scaleX(1);
+		}
+
+		.globalnav-curtain {
+			position: fixed;
+			inset: var(--flyout-top, 0px) 0 0;
+			z-index: calc(var(--sl-z-index-navbar) + 3);
+			background:
+				linear-gradient(
+					180deg,
+					color-mix(in srgb, var(--sl-color-bg) 56%, transparent) 0%,
+					color-mix(in srgb, var(--sl-color-bg) 82%, transparent) 20%,
+					color-mix(in srgb, var(--sl-color-bg) 90%, transparent) 100%
+				);
+			backdrop-filter: blur(24px) saturate(0.72) brightness(1.04);
+			-webkit-backdrop-filter: blur(24px) saturate(0.72) brightness(1.04);
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity 180ms ease;
+		}
+
+		.globalnav-flyout {
+			position: fixed;
+			inset-inline: 0;
+			inset-block-start: var(--flyout-top, 0px);
+			z-index: calc(var(--sl-z-index-navbar) + 4);
+			opacity: 0;
+			visibility: hidden;
+			transform: translateY(-12px);
+			pointer-events: none;
+			transition:
+				opacity 180ms ease,
+				transform 180ms ease,
+				visibility 180ms ease;
+		}
+
+		.globalnav-flyout-shell {
+			border-top: 1px solid color-mix(in srgb, var(--sl-color-gray-5) 24%, transparent);
+			border-bottom: 1px solid color-mix(in srgb, var(--sl-color-gray-5) 16%, transparent);
+			background: color-mix(in srgb, var(--sl-color-bg-nav) 98%, transparent);
+			box-shadow: 0 2rem 5rem -3rem color-mix(in srgb, var(--sl-color-black) 28%, transparent);
+			backdrop-filter: blur(24px) saturate(0.94);
+			-webkit-backdrop-filter: blur(24px) saturate(0.94);
+		}
+
+		.globalnav-flyout-inner {
+			position: relative;
+			width: min(88rem, calc(100vw - clamp(3rem, 6vw, 8rem)));
+			margin: 0 auto;
+			--domain-panel-top-space: clamp(0.95rem, 1.6vw, 1.45rem);
+			--domain-panel-bottom-space: clamp(1.15rem, 1.9vw, 1.7rem);
+			padding: clamp(2.85rem, 5vw, 4.2rem) 0 clamp(3.6rem, 5.8vw, 5.2rem);
+			transition: height 180ms ease;
+		}
+
+		:global(.main-pane),
+		:global(.sidebar-pane),
+		:global(.right-sidebar) {
+			transition:
+				filter 220ms ease,
+				opacity 220ms ease;
+		}
+
+		:global(html[data-globalnav-focus] .main-pane),
+		:global(html[data-globalnav-focus] .sidebar-pane),
+		:global(html[data-globalnav-focus] .right-sidebar) {
+			filter: blur(10px) saturate(0.74);
+			opacity: 0.46;
+		}
+
+		.desktop-domain-nav[data-state="opening"] .globalnav-curtain,
+		.desktop-domain-nav[data-state="open"] .globalnav-curtain,
+		.desktop-domain-nav[data-state="closing"] .globalnav-curtain {
+			opacity: 1;
+		}
+
+		.desktop-domain-nav[data-state="opening"] .globalnav-curtain,
+		.desktop-domain-nav[data-state="open"] .globalnav-curtain {
+			pointer-events: auto;
+		}
+
+		.desktop-domain-nav[data-state="opening"] .globalnav-flyout,
+		.desktop-domain-nav[data-state="open"] .globalnav-flyout {
+			opacity: 1;
+			visibility: visible;
+			transform: translateY(0);
+			pointer-events: auto;
+		}
+
+		.more-nav {
+			position: relative;
+			display: flex;
+			align-items: center;
+		}
+
+		.more-panel {
+			position: absolute;
+			inset-inline-end: 0;
+			inset-block-start: calc(100% + 0.85rem);
+			width: max-content;
+			min-width: 14rem;
+			padding: 0.5rem;
+			border: 1px solid color-mix(in srgb, var(--sl-color-gray-5) 24%, transparent);
+			border-radius: 1rem;
+			background: color-mix(in srgb, var(--sl-color-bg-nav) 98%, transparent);
+			box-shadow: 0 1.5rem 3rem -2rem color-mix(in srgb, var(--sl-color-black) 42%, transparent);
+			backdrop-filter: blur(24px) saturate(0.94);
+			-webkit-backdrop-filter: blur(24px) saturate(0.94);
+		}
+
+		.more-panel ul {
+			display: grid;
+			gap: 0.2rem;
+			list-style: none;
+			margin: 0;
+			padding: 0;
+		}
+
+		.more-link {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 1rem;
+			padding: 0.7rem 0.8rem;
+			border-radius: 0.8rem;
+			color: var(--sl-color-white);
+			text-decoration: none;
+			transition:
+				background-color 180ms ease,
+				color 180ms ease;
+		}
+
+		.more-link small {
+			color: var(--sl-color-gray-3);
+			white-space: nowrap;
+		}
+
+		.more-link:hover,
+		.more-link:focus-visible,
+		.more-link.current {
+			background: color-mix(in srgb, var(--sl-color-accent) 12%, transparent);
+			color: var(--sl-color-accent-high);
+		}
+
+		.mobile-domain-nav {
+			display: grid;
+			gap: 0.85rem;
+		}
+
+		.mobile-nav-header {
+			display: flex;
+			align-items: baseline;
+			justify-content: space-between;
+			gap: 0.75rem;
+		}
+
+		.mobile-nav-header p,
+		.mobile-nav-header strong {
+			margin: 0;
+		}
+
+		.mobile-nav-header p {
+			font-size: 0.72rem;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			color: var(--sl-color-gray-3);
+		}
+
+		.mobile-nav-header strong {
+			font-size: 0.88rem;
+			color: var(--sl-color-white);
+		}
+
+		.mobile-domain-list {
+			display: grid;
+			gap: 0.75rem;
+			list-style: none;
+			margin: 0;
+			padding: 0;
+		}
+
+		.mobile-domain-card {
+			border: 1px solid color-mix(in srgb, var(--sl-color-white) 7%, transparent);
+			border-radius: 1rem;
+			background:
+				linear-gradient(180deg, color-mix(in srgb, var(--sl-color-accent) 8%, transparent), transparent 60%),
+				color-mix(in srgb, var(--sl-color-white) 2%, transparent);
+			overflow: hidden;
+		}
+
+		.mobile-domain-card.current {
+			border-color: color-mix(in srgb, var(--sl-color-accent) 42%, transparent);
+		}
+
+		.mobile-domain-link {
+			display: flex;
+			align-items: flex-start;
+			justify-content: space-between;
+			gap: 1rem;
+			padding: 1rem 1.05rem;
+			color: inherit;
+			text-decoration: none;
+		}
+
+		.mobile-domain-copy span {
+			display: block;
+			color: var(--sl-color-white);
+			font-weight: 620;
+			letter-spacing: -0.015em;
+		}
+
+		.mobile-domain-copy p,
+		.mobile-domain-link small {
+			margin: 0;
+		}
+
+		.mobile-domain-copy p {
+			margin-top: 0.3rem;
+			font-size: 0.92rem;
+			line-height: 1.55;
+			color: var(--sl-color-gray-3);
+		}
+
+		.mobile-domain-link small {
+			color: var(--sl-color-accent-high);
+			font-size: 0.78rem;
+			white-space: nowrap;
+		}
+
+		.site-switcher-item {
+			position: relative;
+		}
+
+		.site-switcher-item::after {
+			display: none;
+		}
+
+		@media (max-width: 79.999rem) {
+			.trigger-list {
+				gap: clamp(0.85rem, 1.4vw, 1.4rem);
+			}
+		}
+
+		@media (max-width: 71.999rem) {
+			.label-full {
+				display: none;
+			}
+
+			.label-short {
+				display: inline;
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.globalnav-curtain,
+			.globalnav-flyout,
+			.globalnav-flyout-inner,
+			:global(.main-frame),
+			:global(.sidebar-pane) {
+				transition-duration: 0ms;
+			}
+		}
+	}
+</style>

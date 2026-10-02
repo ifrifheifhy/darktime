@@ -1,0 +1,176 @@
+---
+import { getSiteConfig } from '../../../../content/site-config'
+
+const pathname = Astro.url.pathname
+const noteSite = getSiteConfig('note')
+
+const navigation = [
+  { href: '/', title: '首页', key: 'home' },
+  { href: noteSite.href, title: '学习', key: 'study', external: true },
+  { href: '/#projects', title: '项目', key: 'projects' },
+  { href: '/about', title: '关于', key: 'about' },
+]
+---
+
+<header
+  class="fixed top-0 left-0 w-full z-40 border-t-[3px] border-[#9a6b27] dark:border-[#cba153] bg-[#f5f0e6]/90 dark:bg-[#151413]/90 backdrop-blur-md border-b border-[#ded5c3] dark:border-[#38332a] transition-colors"
+>
+  <nav
+    class="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between px-6 py-4"
+  >
+    <!-- Logo / Brand -->
+    <div class="flex items-center">
+      <a
+        href="/"
+        class="group inline-flex items-center gap-2.5 text-[#2c2520] dark:text-[#e6dfd3] transition-colors"
+        aria-label="darktime 首页"
+      >
+        <!-- 古典星月刻印 SVG -->
+        <span class="text-[#9a6b27] dark:text-[#cba153] transition-transform duration-300 group-hover:rotate-45">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+            <path d="M19 3v4"></path>
+            <path d="M21 5h-4"></path>
+          </svg>
+        </span>
+        <span class="font-serif text-2xl font-bold tracking-[0.08em] text-[#2c2520] dark:text-[#e6dfd3] uppercase">
+          darktime
+        </span>
+      </a>
+    </div>
+
+    <!-- Mobile quick actions -->
+    <div class="flex items-center gap-3 md:hidden">
+      {
+        navigation.map((nav) => (
+          <a
+            href={nav.href}
+            target={nav.external ? '_blank' : undefined}
+            rel={nav.external ? 'noopener noreferrer' : undefined}
+            class="text-sm font-medium text-[#6e6459] hover:text-[#9a6b27] dark:text-[#9c9486] dark:hover:text-[#cba153] transition-colors"
+          >
+            {nav.title}
+          </a>
+        ))
+      }
+
+      <button
+        type="button"
+        class="p-1.5 text-[#6e6459] hover:text-[#9a6b27] dark:text-[#9c9486] dark:hover:text-[#cba153] transition-colors"
+        data-theme-toggle
+        aria-label="切换主题"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="hidden h-5 w-5 dark:block"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"
+          ></path>
+        </svg>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          class="block h-5 w-5 dark:hidden"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M21.752 15.002A9.718 9.718 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"
+          ></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Desktop nav -->
+    <ul class="hidden items-center gap-7 md:flex">
+      {
+        navigation.map((nav) => {
+          const isActive = pathname === nav.href
+          return (
+            <li>
+              <a
+                href={nav.href}
+                target={nav.external ? '_blank' : undefined}
+                rel={nav.external ? 'noopener noreferrer' : undefined}
+                class:list={[
+                  'text-base tracking-wide transition-colors py-1 hover:text-[#9a6b27] dark:hover:text-[#cba153]',
+                  isActive
+                    ? 'font-semibold text-[#9a6b27] dark:text-[#cba153] border-b-2 border-[#9a6b27] dark:border-[#cba153]'
+                    : 'text-[#6e6459] dark:text-[#9c9486]',
+                ]}
+              >
+                {nav.title}
+              </a>
+            </li>
+          )
+        })
+      }
+
+      <li class="pl-2 border-l border-[#ded5c3] dark:border-[#38332a]">
+        <button
+          type="button"
+          class="flex items-center justify-center p-2 rounded-full text-[#6e6459] hover:text-[#9a6b27] dark:text-[#9c9486] dark:hover:text-[#cba153] hover:bg-[#efe7d8] dark:hover:bg-[#221f1b] transition-colors"
+          data-theme-toggle
+          aria-label="切换主题"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.6"
+            stroke="currentColor"
+            class="hidden h-5 w-5 dark:block"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"
+            ></path>
+          </svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.6"
+            stroke="currentColor"
+            class="block h-5 w-5 dark:hidden"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M21.752 15.002A9.718 9.718 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"
+            ></path>
+          </svg>
+        </button>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<script is:inline>
+  function bindThemeToggle() {
+    const buttons = document.querySelectorAll('[data-theme-toggle]')
+    buttons.forEach((btn) => {
+      if (btn.dataset.bound !== 'true') {
+        btn.dataset.bound = 'true'
+        btn.addEventListener('click', () => {
+          const isDark = document.documentElement.classList.toggle('dark')
+          localStorage.setItem('theme', isDark ? 'dark' : 'light')
+        })
+      }
+    })
+  }
+
+  bindThemeToggle()
+  document.addEventListener('astro:page-load', bindThemeToggle)
+</script>

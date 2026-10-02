@@ -1,0 +1,91 @@
+---
+import { FileTree } from "@astrojs/starlight/components";
+import type { ArticleNode, FolderNode } from "../lib/content-tree";
+
+interface Props {
+	nodes: (FolderNode | ArticleNode)[];
+	rootLabel?: string;
+}
+
+const { nodes, rootLabel } = Astro.props;
+
+function getBaseName(slug: string): string {
+	const segments = slug.split("/").filter(Boolean);
+	return segments[segments.length - 1] ?? slug;
+}
+
+function slugToHref(slug: string): string {
+	return `/${slug}/`;
+}
+
+function escapeHtml(str: string): string {
+	return str
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;");
+}
+
+function getFolderLabel(node: FolderNode): string {
+	return `${node.title}/`;
+}
+
+function getArticleLabel(node: ArticleNode): string {
+	return `${getBaseName(node.slug)}${node.sourceExt ?? ""}`;
+}
+
+function renderNodes(nodeList: (FolderNode | ArticleNode)[]): string {
+	return nodeList
+		.map((node) => {
+			if (node.type === "folder") {
+				const label = escapeHtml(getFolderLabel(node));
+				if (node.children.length > 0) {
+					return `<li><span>${label}</span><ul>${renderNodes(node.children)}</ul></li>`;
+				}
+				return `<li><span>${label}</span></li>`;
+			} else {
+				const href = escapeHtml(slugToHref(node.slug));
+				const label = escapeHtml(getArticleLabel(node));
+				return `<li><a class="directory-tree-file-link" href="${href}">${label}</a></li>`;
+			}
+		})
+		.join("");
+}
+
+const innerHtml = rootLabel
+	? `<ul><li><span>${escapeHtml(rootLabel)}</span><ul>${renderNodes(nodes)}</ul></li></ul>`
+	: `<ul>${renderNodes(nodes)}</ul>`;
+---
+
+<div class="directory-tree">
+	<FileTree>
+		<Fragment set:html={innerHtml} />
+	</FileTree>
+</div>
+
+<style>
+	@layer starlight.components {
+		.directory-tree :global(.directory > details > summary) {
+			transition:
+				color 180ms ease,
+				background-color 180ms ease;
+		}
+
+		.directory-tree :global(.directory > details > summary:hover) {
+			color: var(--sl-color-text-accent);
+		}
+
+		.directory-tree :global(.directory > details > summary:hover .tree-icon) {
+			fill: currentColor;
+		}
+
+		:global(.directory-tree-file-link) {
+			color: inherit;
+			text-decoration: none;
+		}
+
+		:global(.directory-tree-file-link:hover) {
+			color: var(--sl-color-text-accent);
+		}
+	}
+</style>

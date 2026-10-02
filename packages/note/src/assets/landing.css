@@ -1,0 +1,136 @@
+@import "katex/dist/katex.min.css";
+
+/* 引入古典衬线字体栈 */
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Serif+SC:wght@300;400;500;600;700&display=swap");
+
+/* 确保内容区域图片自动缩放，不截断 */
+.sl-markdown-content img {
+	max-width: 100%;
+	height: auto;
+	display: block;
+	margin-inline: auto;
+}
+
+/* KaTeX 默认禁止公式换行；在窄容器中将滚动限制在公式自身 */
+.sl-markdown-content .katex-display {
+	max-width: 100%;
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+
+:root {
+	--gold-hsl: 38, 56%, 52%;
+	--overlay-gold: hsla(var(--gold-hsl), 0.15);
+	--sl-content-width: 50rem;
+
+	/* Starlight 颜色变量重载为古典油画古金色与暖调深底 */
+	--sl-color-accent-low: hsl(38, 48%, 22%);
+	--sl-color-accent: hsl(38, 56%, 52%);
+	--sl-color-accent-high: hsl(38, 65%, 68%);
+
+	--sl-color-bg: #151413;
+	--sl-color-bg-nav: #1b1917;
+	--sl-color-bg-sidebar: #171513;
+
+	--sl-color-text: #e6dfd3;
+	--sl-color-text-accent: #cba153;
+	--sl-color-hairline: #38332a;
+
+	--sl-font: "EB Garamond", "Noto Serif SC", "Songti SC", Georgia, serif;
+	--sl-font-headings: "Cormorant Garamond", "Noto Serif SC", "Songti SC", Georgia, serif;
+
+	--note-heading-bar: #cba153;
+	--note-heading-dot: #dfb76c;
+}
+
+:root[data-theme='light'] {
+	--gold-hsl: 36, 60%, 36%;
+	--overlay-gold: hsla(var(--gold-hsl), 0.1);
+
+	--sl-color-accent-low: hsl(36, 50%, 88%);
+	--sl-color-accent: hsl(36, 60%, 38%);
+	--sl-color-accent-high: hsl(36, 65%, 26%);
+
+	--sl-color-bg: #f5f0e6;
+	--sl-color-bg-nav: #fbf8f1;
+	--sl-color-bg-sidebar: #efe7d8;
+
+	--sl-color-text: #2c2520;
+	--sl-color-text-accent: #9a6b27;
+	--sl-color-hairline: #ded5c3;
+
+	--note-heading-bar: #9a6b27;
+	--note-heading-dot: #cba153;
+}
+
+html {
+	overflow-y: auto;
+	scrollbar-gutter: stable;
+	font-family: var(--sl-font);
+}
+
+.sidebar-pane {
+	scrollbar-gutter: stable;
+}
+
+.sl-markdown-content :is(h2, h3, h4):not(:where(.not-content *)) {
+	position: relative;
+	font-family: var(--sl-font-headings);
+	line-height: var(--sl-line-height-headings);
+	letter-spacing: 0.02em;
+}
+
+.sl-markdown-content h2:not(:where(.not-content *)) {
+	margin-top: 2.6rem;
+	padding-inline-start: 0.75rem;
+	border-inline-start: 3px solid var(--note-heading-bar);
+}
+
+.sl-markdown-content h3:not(:where(.not-content *)) {
+	margin-top: 2.1rem;
+}
+
+.sl-markdown-content h3:not(:where(.not-content *))::before {
+	content: "";
+	display: inline-block;
+	width: 0.35rem;
+	height: 0.35rem;
+	margin-inline-end: 0.55rem;
+	border-radius: 999px;
+	background: var(--note-heading-dot);
+	vertical-align: 0.16em;
+}
+
+.sl-markdown-content h4:not(:where(.not-content *)) {
+	margin-top: 1.8rem;
+}
+
+.sl-markdown-content h4:not(:where(.not-content *))::before {
+	content: "";
+	display: inline-block;
+	width: 0.35rem;
+	height: 0.125rem;
+	margin-inline-end: 0.55rem;
+	border-radius: 999px;
+	background: var(--note-heading-dot);
+	vertical-align: 0.18em;
+}
+
+[data-has-hero] .page {
+	background:
+		linear-gradient(215deg, var(--overlay-gold), transparent 40%),
+		radial-gradient(var(--overlay-gold), transparent 40%) no-repeat -60vw -40vh / 105vw 200vh,
+		radial-gradient(var(--overlay-gold), transparent 65%) no-repeat 50% calc(100% + 20rem) /
+			60rem 30rem;
+}
+
+[data-has-hero] header {
+	border-bottom: 1px solid var(--sl-color-hairline);
+	background-color: transparent;
+	-webkit-backdrop-filter: blur(16px);
+	backdrop-filter: blur(16px);
+}
+
+[data-has-hero] .hero > img {
+	filter: drop-shadow(0 0 3rem var(--overlay-gold));
+}
